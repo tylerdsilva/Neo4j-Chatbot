@@ -1,0 +1,59 @@
+= Neo4j Chatbot using Python and Langchain
+
+== Running the application
+
+To run the application, you must install the libraries listed in `requirements.txt`.
+
+[source,sh]
+pip install -r requirements.txt
+
+Create an `.env` file and pass the respecitve secrets
+[source,sh]
+OPENAI_API_KEY=
+OPENAI_MODEL=
+NEO4J_URI=
+NEO4J_USERNAME=
+NEO4J_PASSWORD=
+
+Place the `.env` into the project directory
+
+The embeddings were created using `generate-embeddings.py` and stored in GDrive. To load the embeddings run the following command in Neo4j:
+[source,sh]
+LOAD CSV WITH HEADERS
+FROM 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQISm7bW4mOFE9cLbTONnkl8sObR2naXT_82Rdcb8SGLjUIpwIQ-ljy71NGstRz_gTZ_2z-RwrnDwY4/pub?gid=1101620206&single=true&output=csv'
+AS row
+MATCH (m:Movie)
+where id(m) = toInteger(row.movieId)
+CALL db.create.setNodeVectorProperty(m, 'embedding', apoc.convert.fromJsonList(row.embedding))
+RETURN count(*)
+
+Create a vector index by typing the following Cypher statement into Neo4j
+[source,sh]
+CALL db.index.vector.createNodeIndex(
+    'movieTaglines',
+    'Movie',
+    'embedding',
+    1536,
+    'cosine'
+)
+
+Verify that all the movies have been indexed by checking if the population percentage is 100% with the following Cypher statement in Neo4j
+[source,sh]
+SHOW INDEXES  YIELD id, name, type, state, populationPercent WHERE type = "VECTOR"
+
+Run the chatbot using `main.py` in the src directory
+[source,sh]
+python main.py
+
+Sample output:
+[source,sh]
+>Who directed The Matrix?        
+That is correct. The Matrix was indeed directed by Lana Wachowski and Lilly Wachowski.
+>Who acted in the Matrix? 
+The actors who starred in The Matrix are Keanu Reeves, Laurence Fishburne, and Carrie-Anne Moss, among others.
+>What movie was I talking about?
+The movie you were talking about is 'The Matrix' directed by Lana Wachowski and Lilly Wachowski.
+>Can you provide me the trailer link?
+The trailer link is https://www.youtube.com/watch?v=vKQi3bBA1y8&pp=ygUSVGhlIE1hdHJpeCB0cmFpbGVy
+>Which movies have a similar tagline?
+The movies that have a similar tagline to 'The Matrix' are 'The Matrix Reloaded' and 'The Matrix Revolutions'.
