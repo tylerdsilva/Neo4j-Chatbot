@@ -18,7 +18,6 @@ embeddings = OpenAIEmbeddings(
     openai_api_key=os.getenv("OPENAI_API_KEY")
 )
 
-# Memory that uses past 5 messages 
-# Reason: manage memory more efficiently
+# Memory that uses all conversation
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
